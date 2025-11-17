@@ -131,18 +131,9 @@ prophet_model.fit(history_pd)
 
 # COMMAND ----------
 
-# TODO: train your own model
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC # Fit Data and Build Forecast
 # MAGIC After fitting the model, you will create a DataFrame that outlines the future dates you wish to predict. Using this DataFrame, Prophet will generate forecasts for the specified future dates. 
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC **TODO: Build the forecast using you additionally trained models**
 
 # COMMAND ----------
 
@@ -157,10 +148,6 @@ future_pd = prophet_model.make_future_dataframe(
 #Forecast
 forecast_pd = prophet_model.predict(future_pd)
 display(forecast_pd)
-
-# COMMAND ----------
-
-# TODO: build your own forecast
 
 # COMMAND ----------
 
@@ -303,7 +290,7 @@ with mlflow.start_run(run_name="Prophet Model Run") as run:
 
 # COMMAND ----------
 
-# TODO: log your own model
+ input_example = history_pd.head()[["ds", "y"]]
 
 # COMMAND ----------
 
