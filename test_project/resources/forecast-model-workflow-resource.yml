@@ -1,0 +1,86 @@
+new_cluster: &new_cluster
+  new_cluster:
+    num_workers: 2
+    spark_version: 15.3.x-cpu-ml-scala2.12
+    node_type_id: Standard_D3_v2
+    data_security_mode: "SINGLE_USER"
+    custom_tags:
+      clusterSource: prophet-forecasting
+      project: test_project
+
+common_permissions: &permissions
+  permissions:
+    - level: CAN_VIEW
+      group_name: users
+
+resources:
+  jobs:
+    prophet_forecast_training_job:
+      name: ${bundle.target}-prophet-forecast-training-job
+      job_clusters:
+        - job_cluster_key: prophet_forecast_cluster
+          <<: *new_cluster
+      tasks:
+        - task_key: Train
+          job_cluster_key: prophet_forecast_cluster
+          notebook_task:
+            notebook_path: ../src/train_forecast_model.ipynb
+            base_parameters:
+              env: ${bundle.target}
+              catalog: ${var.catalog}
+              schema: vectorlab
+              table: forecast_data
+              forecast_horizon: "10"
+              experiment_name: /${bundle.target}-prophet-forecast-experiment
+              model_name: ${var.catalog}.vectorlab.prophet_forecast
+              # git source information of current ML resource deployment. It will be persisted as part of the workflow run
+              git_source_info: url:${bundle.git.origin_url}; branch:${bundle.git.branch}; commit:${bundle.git.commit}
+          
+        - task_key: ModelValidation
+          job_cluster_key: prophet_forecast_cluster
+          depends_on:
+            - task_key: Train
+          notebook_task:
+            notebook_path: ../src/validate_forecast_model.ipynb
+            base_parameters:
+              experiment_name: /${bundle.target}-prophet-forecast-experiment
+              # The `run_mode` defines whether model validation is enabled or not.
+              # It can be one of the three values:
+              # `disabled` : Do not run the model validation notebook.
+              # `dry_run`  : Run the model validation notebook. Ignore failed model validation rules and proceed to set
+              #               model alias to "challenger".
+              # `enabled`  : Run the model validation notebook. Set model alias to "challenger" only if all model validation
+              #               rules are passing.
+              run_mode: dry_run
+              # Whether to load the current registered "champion" model as baseline.
+              # Baseline model is a requirement for relative change and absolute change validation thresholds.
+              enable_baseline_comparison: "false"
+              # Validation data configuration
+              catalog: ${var.catalog}
+              schema: vectorlab
+              table: forecast_data
+              forecast_horizon: "10"
+              # Model information (will be passed from Train task via taskValues)
+              model_name: ${var.catalog}.vectorlab.prophet_forecast
+              # git source information of current ML resource deployment. It will be persisted as part of the workflow run
+              git_source_info: url:${bundle.git.origin_url}; branch:${bundle.git.branch}; commit:${bundle.git.commit}
+              
+      schedule:
+        # Run weekly on Mondays at 6am UTC
+        quartz_cron_expression: "0 0 6 ? * MON"
+        timezone_id: UTC
+        pause_status: PAUSED  # Start with schedule paused
+      
+      <<: *permissions
+      
+      # Email notifications on job failure
+      # email_notifications:
+      #   on_failure:
+      #     - your.email@company.com
+      
+      # Job timeout (optional)
+      timeout_seconds: 7200  # 2 hours
+      
+      # Maximum concurrent runs
+      max_concurrent_runs: 1
+
