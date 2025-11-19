@@ -24,7 +24,7 @@ resources:
         - task_key: Train
           job_cluster_key: prophet_forecast_cluster
           notebook_task:
-            notebook_path: ../src/train_forecast_model.ipynb
+            notebook_path: ../training/notebooks/train_forecast_model.ipynb
             base_parameters:
               env: ${bundle.target}
               catalog: ${var.catalog}
@@ -41,7 +41,7 @@ resources:
           depends_on:
             - task_key: Train
           notebook_task:
-            notebook_path: ../src/validate_forecast_model.ipynb
+            notebook_path: ../validation/notebooks/validate_forecast_model.ipynb
             base_parameters:
               experiment_name: /${bundle.target}-prophet-forecast-experiment
               # The `run_mode` defines whether model validation is enabled or not.
@@ -70,7 +70,7 @@ resources:
           depends_on:
             - task_key: ModelValidation
           notebook_task:
-            notebook_path: ../src/deploy_forecast_model.ipynb
+            notebook_path: ../deployment/notebooks/deploy_forecast_model.ipynb
             base_parameters:
               env: ${bundle.target}
               model_name: ${var.catalog}.${var.schema}.prophet_forecast
