@@ -19,6 +19,8 @@ variables:
     description: The catalog to use
   schema:
     description: The schema to use
+  node_type_id:
+    description: The node type for compute clusters
 
 targets:
   dev:
@@ -33,15 +35,20 @@ targets:
     variables:
       catalog: johannes_oehler
       schema: dev
+      node_type_id: Standard_D3_v2  # Azure node type
   prod:
     mode: production
     workspace:
-      host: https://adb-984752964297111.11.azuredatabricks.net
+      host: https://e2-demo-field-eng.cloud.databricks.com
       # We explicitly deploy to /Workspace/Users/johannes.oehler@databricks.com to make sure we only have a single copy.
       root_path: /Workspace/Users/johannes.oehler@databricks.com/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: johannes_oehler
-      schema: prod
+      catalog: johannes_oehler_prod
+      schema: vectorlab
+      node_type_id: m5d.large  # AWS node type
+    run_as:
+      # Use service principal or user for production
+      user_name: johannes.oehler@databricks.com
     permissions:
       - user_name: johannes.oehler@databricks.com
         level: CAN_MANAGE

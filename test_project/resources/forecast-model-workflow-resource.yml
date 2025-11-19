@@ -2,7 +2,7 @@ new_cluster: &new_cluster
   new_cluster:
     num_workers: 2
     spark_version: 15.3.x-cpu-ml-scala2.12
-    node_type_id: Standard_D3_v2
+    node_type_id: ${var.node_type_id}
     data_security_mode: "SINGLE_USER"
     custom_tags:
       clusterSource: prophet-forecasting
@@ -28,11 +28,11 @@ resources:
             base_parameters:
               env: ${bundle.target}
               catalog: ${var.catalog}
-              schema: vectorlab
+              schema: ${var.schema}
               table: forecast_data
               forecast_horizon: "10"
               experiment_name: /${bundle.target}-prophet-forecast-experiment
-              model_name: ${var.catalog}.vectorlab.prophet_forecast
+              model_name: ${var.catalog}.${var.schema}.prophet_forecast
               # git source information of current ML resource deployment. It will be persisted as part of the workflow run
               git_source_info: url:${bundle.git.origin_url}; branch:${bundle.git.branch}; commit:${bundle.git.commit}
           
@@ -57,11 +57,33 @@ resources:
               enable_baseline_comparison: "false"
               # Validation data configuration
               catalog: ${var.catalog}
-              schema: vectorlab
+              schema: ${var.schema}
               table: forecast_data
               forecast_horizon: "10"
               # Model information (will be passed from Train task via taskValues)
-              model_name: ${var.catalog}.vectorlab.prophet_forecast
+              model_name: ${var.catalog}.${var.schema}.prophet_forecast
+              # git source information of current ML resource deployment. It will be persisted as part of the workflow run
+              git_source_info: url:${bundle.git.origin_url}; branch:${bundle.git.branch}; commit:${bundle.git.commit}
+        
+        - task_key: ModelDeployment
+          job_cluster_key: prophet_forecast_cluster
+          depends_on:
+            - task_key: ModelValidation
+          notebook_task:
+            notebook_path: ../src/deploy_forecast_model.ipynb
+            base_parameters:
+              env: ${bundle.target}
+              model_name: ${var.catalog}.${var.schema}.prophet_forecast
+              # Model version will be retrieved from Train task via taskValues (uses "challenger" alias if not specified)
+              model_version: ""
+              serving_endpoint_name: ${bundle.target}-prophet-forecast-endpoint
+              # Promote to champion after successful deployment
+              # Set to "false" for dev environment, "true" for staging/prod
+              promote_to_champion: "true"
+              # Test the endpoint after deployment
+              test_endpoint: "true"
+              # Optional: Custom endpoint configuration (JSON format)
+              # endpoint_config_json: '{"workload_size": "Small", "scale_to_zero_enabled": true}'
               # git source information of current ML resource deployment. It will be persisted as part of the workflow run
               git_source_info: url:${bundle.git.origin_url}; branch:${bundle.git.branch}; commit:${bundle.git.commit}
               

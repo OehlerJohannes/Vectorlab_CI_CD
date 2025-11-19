@@ -9,7 +9,7 @@ grants: &grants
   grants:
     - privileges:
         - EXECUTE
-      principal: group
+      principal: users
 
 # Defines model and experiments for Prophet forecasting
 resources:
@@ -17,7 +17,7 @@ resources:
       prophet_forecast_model:
         name: prophet_forecast
         catalog_name: ${var.catalog}
-        schema_name: vectorlab
+        schema_name: ${var.schema}
         comment: Prophet forecasting model in Unity Catalog for the "test_project" for ${bundle.target} deployment target.
         <<: *grants
 
@@ -25,5 +25,4 @@ resources:
     prophet_forecast_experiment:
       name: /${bundle.target}-prophet-forecast-experiment
       <<: *permissions
-      description: MLflow Experiment used to track Prophet forecasting model training runs.
 
